@@ -229,18 +229,23 @@ export const sendForgotPasswordOtp = async (req: Request, res: Response) => {
   }
 
   try {
+    console.log(`[ForgotPassword] Request for email: ${email}`);
     // Check if user exists in Supabase Auth (more reliable than profiles table)
     const { data: authList, error: authError } = await supabaseAdmin.auth.admin.listUsers();
 
     if (authError || !authList) {
+      console.error('[ForgotPassword] Supabase Auth Error:', authError);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     const authUser = (authList.users as any[]).find((u: any) => u.email === email);
 
     if (!authUser) {
+      console.warn(`[ForgotPassword] User not found in Auth for email: ${email}`);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    console.log(`[ForgotPassword] User found: ${authUser.id}`);
 
     // Try to get name from profiles table (optional — fallback to email prefix)
     const { data: profile } = await supabase
@@ -256,7 +261,7 @@ export const sendForgotPasswordOtp = async (req: Request, res: Response) => {
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes from now
 
     otpStore.set(email, { otp, expiresAt });
-    console.log(`[TESTING] OTP for ${email} is: ${otp}`);
+    console.log(`[DEBUG] ForgotPassword OTP for ${email} is: ${otp}`);
 
     const subject = 'Reset Your SkillBridge Password';
     const html = `
@@ -274,9 +279,11 @@ export const sendForgotPasswordOtp = async (req: Request, res: Response) => {
     `;
 
     // Send in background
-    sendEmail(email, subject, `Your password reset OTP is: ${otp}`, html).catch(err => console.error('[ForgotPassword] Background Email Error:', err));
+    console.log(`[ForgotPassword] Attempting to send email to: ${email}`);
+    sendEmail(email, subject, `Your password reset OTP is: ${otp}`, html)
+      .then(resp => console.log(`[ForgotPassword] Email sent successfully:`, resp))
+      .catch(err => console.error('[ForgotPassword] Email Error:', err));
 
-    console.log(`[ForgotPassword] Password reset initiated for ${email}`);
     res.status(200).json({ success: true, message: 'Password reset initiated. OTP will be sent to your email.' });
   } catch (error: any) {
     console.error('Send OTP Error:', error.message);
