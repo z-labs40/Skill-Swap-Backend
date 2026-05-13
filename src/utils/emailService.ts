@@ -13,7 +13,9 @@ const transporter = nodemailer.createTransport({
   },
   tls: {
     rejectUnauthorized: false
-  }
+  },
+  // Force IPv4
+  connectionTimeout: 10000,
 });
 
 interface EmailResponse {
