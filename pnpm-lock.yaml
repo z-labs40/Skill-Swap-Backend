@@ -23,6 +23,9 @@ importers:
       '@types/pg':
         specifier: ^8.20.0
         version: 8.20.0
+      axios:
+        specifier: ^1.16.0
+        version: 1.16.0
       cloudinary:
         specifier: ^2.9.0
         version: 2.9.0
