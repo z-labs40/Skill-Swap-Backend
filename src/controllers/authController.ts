@@ -61,6 +61,7 @@ export const register = async (req: Request, res: Response) => {
     `;
 
     // 3. Send OTP Email (in background to prevent frontend timeout)
+    console.log(`[DEBUG] OTP for ${email} is: ${otp}`);
     sendEmail(
       email,
       'Verify Your SkillBridge Account',
