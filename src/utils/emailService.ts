@@ -4,13 +4,15 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: 465, // Using SSL port for better stability on Render
-  secure: true, 
+  service: 'gmail', // Let nodemailer handle the host/port/secure logic for Gmail
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
+  // Adding timeout settings to prevent hanging
+  connectionTimeout: 10000, 
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 // Verify connection configuration on startup
