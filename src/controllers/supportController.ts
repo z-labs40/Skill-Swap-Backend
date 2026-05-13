@@ -126,7 +126,7 @@ export const replyToMessage = async (req: Request, res: Response) => {
         {
           id: `reply_${Date.now()}`,
           user_email: original.user_email,
-          message: reply,
+          message: encrypt(reply),
           status: 'replied', // Use this status to identify admin replies
           timestamp: new Date().toISOString()
         }
