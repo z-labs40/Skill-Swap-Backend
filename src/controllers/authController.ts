@@ -258,18 +258,23 @@ export const sendForgotPasswordOtp = async (req: Request, res: Response) => {
     otpStore.set(email, { otp, expiresAt });
     console.log(`[TESTING] OTP for ${email} is: ${otp}`);
 
-    const subject = 'Your Password Reset OTP';
-    const text = `Hi ${userName},\n\nYour OTP for password reset is: ${otp}. It is valid for 10 minutes.`;
+    const subject = 'Reset Your SkillBridge Password';
     const html = `
-      <h1>Password Reset OTP</h1>
-      <p>Hi <b>${userName}</b>,</p>
-      <p>Your OTP for password reset is:</p>
-      <h2 style="background: #f4f4f4; padding: 10px; display: inline-block; border-radius: 5px;">${otp}</h2>
-      <p>This OTP is valid for 10 minutes.</p>
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+        <h2 style="color: #7c3aed; text-align: center;">Reset Your Password</h2>
+        <p>Hi <b>${userName}</b>,</p>
+        <p>We received a request to reset your password. Please use the following OTP to proceed:</p>
+        <div style="background: #f8f7ff; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #7c3aed; text-align: center;">
+          <h1 style="margin: 0; color: #7c3aed; letter-spacing: 5px;">${otp}</h1>
+        </div>
+        <p style="font-size: 12px; color: #666;">This OTP is valid for 10 minutes. If you didn't request this, you can safely ignore this email.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
+        <p style="font-size: 11px; color: #aaa; text-align: center;">SkillBridge Platform &bull; 2026</p>
+      </div>
     `;
 
     // Send in background
-    sendEmail(email, subject, text, html).catch(err => console.error('[ForgotPassword] Background Email Error:', err));
+    sendEmail(email, subject, `Your password reset OTP is: ${otp}`, html).catch(err => console.error('[ForgotPassword] Background Email Error:', err));
 
     console.log(`[ForgotPassword] Password reset initiated for ${email}`);
     res.status(200).json({ success: true, message: 'Password reset initiated. OTP will be sent to your email.' });
