@@ -16,12 +16,12 @@ export const sendEmail = async (
   html?: string
 ): Promise<EmailResponse> => {
   try {
-    const apiKey = process.env.BREVO_PASSWORD;
+    const apiKey = process.env.BREVO_API_KEY;
     const senderEmail = process.env.BREVO_USER;
 
     if (!apiKey || !senderEmail) {
       const missing = [];
-      if (!apiKey) missing.push('BREVO_PASSWORD');
+      if (!apiKey) missing.push('BREVO_API_KEY');
       if (!senderEmail) missing.push('BREVO_USER');
       console.error('[EmailService] Missing required environment variables:', missing.join(', '));
       return { success: false, error: `Missing environment variables: ${missing.join(', ')}` };
