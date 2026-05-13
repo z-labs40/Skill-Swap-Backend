@@ -60,23 +60,19 @@ export const register = async (req: Request, res: Response) => {
       </div>
     `;
 
-    const emailResult = await sendEmail(
+    // 3. Send OTP Email (in background to prevent frontend timeout)
+    sendEmail(
       email,
       'Verify Your SkillBridge Account',
       `Your OTP is: ${otp}`,
       htmlContent
-    );
+    ).catch(err => console.error(`[Register] Background Email Error for ${email}:`, err));
 
-    if (!emailResult.success) {
-      console.error(`[Register] Email failed for ${email}:`, emailResult.error);
-      throw new Error(`Failed to send verification email: ${emailResult.error}`);
-    }
-
-    console.log(`[Register] Registration successful for ${email}`);
+    console.log(`[Register] Registration initiated for ${email}`);
 
     res.status(201).json({ 
       success: true, 
-      message: 'OTP sent successfully. Please check your email.', 
+      message: 'Registration initiated. OTP will be sent to your email.', 
       user: { id: userId, email } 
     });
   } catch (error: any) {
@@ -271,14 +267,11 @@ export const sendForgotPasswordOtp = async (req: Request, res: Response) => {
       <p>This OTP is valid for 10 minutes.</p>
     `;
 
-    const result = await sendEmail(email, subject, text, html);
+    // Send in background
+    sendEmail(email, subject, text, html).catch(err => console.error('[ForgotPassword] Background Email Error:', err));
 
-    if (result.success) {
-      console.log(`[ForgotPassword] OTP sent successfully to ${email}`);
-      res.status(200).json({ success: true, message: 'OTP sent successfully to email' });
-    } else {
-      throw new Error('Failed to send email');
-    }
+    console.log(`[ForgotPassword] Password reset initiated for ${email}`);
+    res.status(200).json({ success: true, message: 'Password reset initiated. OTP will be sent to your email.' });
   } catch (error: any) {
     console.error('Send OTP Error:', error.message);
     res.status(500).json({ success: false, error: 'Failed to send OTP' });
