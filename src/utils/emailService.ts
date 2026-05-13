@@ -1,17 +1,7 @@
-import nodemailer from 'nodemailer';
+import axios from 'axios';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false, // TLS
-  auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASSWORD, // SMTP Key from Brevo
-  },
-});
 
 interface EmailResponse {
   success: boolean;
@@ -26,20 +16,29 @@ export const sendEmail = async (
   html?: string
 ): Promise<EmailResponse> => {
   try {
-    console.log('[EmailService] Attempting to send email via Brevo to:', to);
+    console.log('[EmailService] Attempting to send email via Brevo HTTP API to:', to);
 
-    const info = await transporter.sendMail({
-      from: `"SkillBridge Support" <${process.env.BREVO_USER}>`,
-      to,
-      subject,
-      text,
-      html: html || text,
-    });
+    const response = await axios.post(
+      'https://api.brevo.com/v3/smtp/email',
+      {
+        sender: { name: 'SkillBridge Support', email: process.env.BREVO_USER },
+        to: [{ email: to }],
+        subject: subject,
+        textContent: text,
+        htmlContent: html || text,
+      },
+      {
+        headers: {
+          'api-key': process.env.BREVO_PASSWORD,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-    console.log('[EmailService] Email sent successfully. MessageId:', info.messageId);
-    return { success: true, messageId: info.messageId };
+    console.log('[EmailService] Email sent successfully via API. ID:', response.data.messageId);
+    return { success: true, messageId: response.data.messageId };
   } catch (error: any) {
-    console.error('[EmailService] Brevo SMTP Error:', error.message || error);
+    console.error('[EmailService] Brevo API Error:', error.response?.data || error.message);
     return { success: false, error: error.message || 'Unknown email error' };
   }
 };
