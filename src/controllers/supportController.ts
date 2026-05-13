@@ -1,6 +1,24 @@
 import { Request, Response } from 'express';
 import { supabaseAdmin as supabase } from '../config/supabase';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import CryptoJS from 'crypto-js';
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'skill-bridge-secret-key';
+
+const encrypt = (text: string) => {
+  return CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
+};
+
+const decrypt = (ciphertext: string) => {
+  if (!ciphertext) return '';
+  try {
+    const bytes = CryptoJS.AES.decrypt(ciphertext, ENCRYPTION_KEY);
+    const originalText = bytes.toString(CryptoJS.enc.Utf8);
+    return originalText || ciphertext;
+  } catch (e) {
+    return ciphertext;
+  }
+};
 
 export const getAllMessages = async (req: Request, res: Response) => {
   try {
@@ -11,7 +29,13 @@ export const getAllMessages = async (req: Request, res: Response) => {
 
     if (error) throw error;
 
-    res.status(200).json({ success: true, data });
+    // Decrypt messages
+    const decryptedData = data.map((msg: any) => ({
+      ...msg,
+      message: decrypt(msg.message)
+    }));
+
+    res.status(200).json({ success: true, data: decryptedData });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -31,7 +55,7 @@ export const sendMessage = async (req: Request, res: Response) => {
         {
           id: Date.now().toString(),
           user_email: userEmail,
-          message,
+          message: encrypt(message),
           status: 'pending',
           timestamp: new Date().toISOString()
         }
@@ -56,7 +80,7 @@ export const sendMessage = async (req: Request, res: Response) => {
           await supabase.from('support_messages').insert([{
             id: `ai_${Date.now()}`,
             user_email: userEmail,
-            message: aiReply.trim(),
+            message: encrypt(aiReply.trim()),
             status: 'replied',
             timestamp: new Date().toISOString()
           }]);
