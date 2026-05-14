@@ -64,32 +64,45 @@ export const sendMessage = async (req: Request, res: Response) => {
 
     if (error) throw error;
 
-    // --- AI Auto-Reply Integration ---
+    // --- AI Auto-Reply Integration (Only if no recent human admin reply) ---
     if (process.env.GEMINI_API_KEY) {
       try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        
-        const prompt = `You are the SkillBridge Support AI. A user said: "${message}". 
-        Give a very short, friendly 1-sentence reply (max 20 words).`;
-        
-        const result = await model.generateContent(prompt);
-        const aiReply = result.response.text();
-        
-        if (aiReply) {
-          await supabase.from('support_messages').insert([{
-            id: `ai_${Date.now()}`,
-            user_email: userEmail,
-            message: encrypt(aiReply.trim()),
-            status: 'replied',
-            timestamp: new Date().toISOString()
-          }]);
+        // Check if a human admin has replied in the last 30 minutes
+        const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+        const { data: recentAdminReply } = await supabase
+          .from('support_messages')
+          .select('id')
+          .eq('user_email', userEmail)
+          .eq('status', 'replied')
+          .not('id', 'ilike', 'ai_%') // Ensure it's not an AI reply
+          .gt('timestamp', thirtyMinsAgo)
+          .limit(1);
+
+        if (recentAdminReply && recentAdminReply.length > 0) {
+          console.log(`[Support] Human admin is active for ${userEmail}. Skipping AI auto-reply.`);
+        } else {
+          const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+          
+          const prompt = `You are the SkillBridge Support AI. A user said: "${message}". 
+          Give a very short, friendly 1-sentence reply (max 20 words).`;
+          
+          const result = await model.generateContent(prompt);
+          const aiReply = result.response.text();
+          
+          if (aiReply) {
+            await supabase.from('support_messages').insert([{
+              id: `ai_${Date.now()}`,
+              user_email: userEmail,
+              message: encrypt(aiReply.trim()),
+              status: 'replied',
+              timestamp: new Date().toISOString()
+            }]);
+          }
         }
       } catch (aiErr) {
         console.error('AI Support Reply Error:', aiErr);
       }
-    } else {
-      console.warn('GEMINI_API_KEY is missing in backend .env');
     }
     // ----------------------------------
 

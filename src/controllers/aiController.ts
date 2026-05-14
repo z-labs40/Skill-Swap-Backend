@@ -42,20 +42,36 @@ export const generateSmartReplies = async (req: Request, res: Response) => {
   }
 };
 
-export const getAiAssistance = async (req: Request, res: Response) => {
-    const { topic, context } = req.body;
+export const chatWithAi = async (req: Request, res: Response) => {
+    const { message, history } = req.body;
     
+    if (!message) {
+        return res.status(400).json({ success: false, error: 'Message is required' });
+    }
+
     try {
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        
+        // Prepare context for the AI
         const prompt = `
-            Context: ${context}
-            User wants help with: ${topic}
-            Provide a helpful, short advice or a template message for the user to use in a skill exchange platform.
+            You are the SkillBridge Personal AI Assistant. 
+            User is asking from their dashboard.
+            Help them with platform features, skill exchange advice, or general learning tips.
+            Keep it friendly, helpful, and concise.
+            
+            Chat History:
+            ${history?.map((m: any) => `${m.role}: ${m.content}`).join('\n')}
+            
+            User Message: ${message}
         `;
+
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        res.json({ success: true, data: response.text() });
+        const aiResponse = response.text();
+
+        res.json({ success: true, data: aiResponse });
     } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Dashboard AI Error:', error);
+        res.status(500).json({ success: false, error: 'AI Assistant is currently unavailable' });
     }
 }
