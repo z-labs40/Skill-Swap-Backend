@@ -18,7 +18,7 @@ export const generateSmartReplies = async (req: Request, res: Response) => {
 
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
     const prompt = `
       You are an AI assistant for SkillBridge, a peer-to-peer skill exchange platform.
@@ -60,7 +60,7 @@ export const chatWithAi = async (req: Request, res: Response) => {
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
         
         // Prepare context for the AI
         const prompt = `
