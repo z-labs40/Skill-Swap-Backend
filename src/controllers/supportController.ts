@@ -87,22 +87,32 @@ export const sendMessage = async (req: Request, res: Response) => {
           const prompt = `You are the SkillBridge Support AI. A user said: "${message}". 
           Give a very short, friendly 1-sentence reply (max 20 words).`;
           
+          console.log(`[Support AI] Generating reply for ${userEmail}...`);
           const result = await model.generateContent(prompt);
           const aiReply = result.response.text();
+          console.log(`[Support AI] Reply generated: ${aiReply}`);
           
           if (aiReply) {
-            await supabase.from('support_messages').insert([{
+            const { error: insErr } = await supabase.from('support_messages').insert([{
               id: `ai_${Date.now()}`,
               user_email: userEmail,
               message: encrypt(aiReply.trim()),
               status: 'replied',
               timestamp: new Date().toISOString()
             }]);
+            
+            if (insErr) {
+              console.error('[Support AI] Insert Error:', insErr);
+            } else {
+              console.log('[Support AI] Reply saved to database.');
+            }
           }
         }
       } catch (aiErr) {
-        console.error('AI Support Reply Error:', aiErr);
+        console.error('[Support AI] Error:', aiErr);
       }
+    } else {
+      console.warn('[Support AI] Skipping: GEMINI_API_KEY is not set!');
     }
     // ----------------------------------
 
