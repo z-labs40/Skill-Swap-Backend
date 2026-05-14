@@ -4,16 +4,20 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
 export const generateSmartReplies = async (req: Request, res: Response) => {
   const { lastMessages, currentUserName, partnerName } = req.body;
+
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('[AI] GEMINI_API_KEY is missing in environment variables!');
+    return res.status(500).json({ success: false, error: 'AI Service configuration missing' });
+  }
 
   if (!lastMessages || lastMessages.length === 0) {
     return res.status(400).json({ success: false, error: 'No messages provided' });
   }
 
   try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `
@@ -45,11 +49,17 @@ export const generateSmartReplies = async (req: Request, res: Response) => {
 export const chatWithAi = async (req: Request, res: Response) => {
     const { message, history } = req.body;
     
+    if (!process.env.GEMINI_API_KEY) {
+        console.error('[AI] GEMINI_API_KEY is missing in environment variables!');
+        return res.status(500).json({ success: false, error: 'AI Service configuration missing' });
+    }
+
     if (!message) {
         return res.status(400).json({ success: false, error: 'Message is required' });
     }
 
     try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
         
         // Prepare context for the AI
