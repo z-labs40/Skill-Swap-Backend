@@ -13,16 +13,10 @@ export const register = async (req: Request, res: Response) => {
     const existingUser = (existingUsers?.users as any[]).find(u => u.email === email);
     
     if (existingUser) {
-      if (existingUser.email_confirmed_at) {
-        // If user is already verified, block re-registration
-        console.log(`[Register] User ${email} already verified. Blocking registration.`);
-        return res.status(409).json({ success: false, error: 'User already exists and is verified. Please log in.' });
-      } else {
-        // If unverified, delete the old record so they can sign up again/re-send OTP
-        console.log(`[Register] User ${email} exists but unverified. Re-sending OTP...`);
-        await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
-        await supabaseAdmin.from('profiles').delete().eq('id', existingUser.id);
-      }
+      // Always delete existing user (verified or not) to allow fresh registration for testing
+      console.log(`[Register] User ${email} exists. Deleting to allow fresh registration as requested...`);
+      await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+      await supabaseAdmin.from('profiles').delete().eq('id', existingUser.id);
     }
 
     // 1. Create user via Supabase Admin (email_confirm: false)
