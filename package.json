@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "pnpm run seed && ts-node-dev src/server.ts",
+    "dev": "ts-node-dev src/server.ts",
     "seed": "ts-node scripts/seed-admin.ts",
     "build": "tsc",
     "start": "node dist/src/server.js"

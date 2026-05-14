@@ -56,14 +56,18 @@ export const getSkillAnalytics = async (req: Request, res: Response) => {
     };
 
     profiles.forEach(p => {
-      p.offers?.forEach((s: string) => {
+      // Ensure offers and seeks are arrays
+      const offers = Array.isArray(p.offers) ? p.offers : [];
+      const seeks = Array.isArray(p.seeks) ? p.seeks : [];
+
+      offers.forEach((s: string) => {
         const key = getCanonicalKey(s, Object.keys(offeredMap));
         offeredMap[key] = (offeredMap[key] || 0) + 1;
         if (!displayNameMap[key]) displayNameMap[key] = s;
         const cat = getCategory(s);
         if (cat !== 'Other') categoryMap[cat]++;
       });
-      p.seeks?.forEach((s: string) => {
+      seeks.forEach((s: string) => {
         const key = getCanonicalKey(s, Object.keys(soughtMap));
         soughtMap[key] = (soughtMap[key] || 0) + 1;
         if (!displayNameMap[key]) displayNameMap[key] = s;

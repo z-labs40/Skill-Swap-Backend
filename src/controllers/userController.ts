@@ -41,7 +41,6 @@ export const getAllUsers = async (req: Request, res: Response) => {
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .select('*')
-      .neq('status', 'deleted')
       .neq('role', 'admin');
 
     if (error) throw error;
@@ -62,21 +61,7 @@ export const updateUserStatus = async (req: Request, res: Response) => {
   }
 
   try {
-    if (status === 'deleted') {
-      // Hard delete the user from Supabase Auth (this is the most important step for true deletion)
-      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
-      if (authError) throw authError;
-
-      // Also explicitly delete from profiles table (just in case cascade delete isn't setup)
-      await supabaseAdmin.from('profiles').delete().eq('id', id);
-
-      return res.status(200).json({ 
-        success: true, 
-        message: 'User permanently deleted from database (Auth & Profiles)' 
-      });
-    }
-
-    // For 'active' or 'suspended', we just update the status column
+    // Update status to 'active', 'suspended', or 'deleted' (soft delete)
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .update({ status })
@@ -93,8 +78,72 @@ export const updateUserStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const hardDeleteUser = async (req: Request, res: Response) => {
+  const { id } = req.params as { id: string };
+  console.log('Backend: Hard Delete requested for user ID:', id);
+  try {
+    // 0. Manual Cascade: Delete related records to avoid Foreign Key constraints
+    console.log('Backend: Deleting related records for user:', id);
+    
+    // Delete swap requests
+    await supabaseAdmin
+      .from('swap_requests')
+      .delete()
+      .or(`sender_id.eq.${id},receiver_id.eq.${id}`);
+      
+    // Delete messages
+    await supabaseAdmin
+      .from('messages')
+      .delete()
+      .or(`sender_id.eq.${id},receiver_id.eq.${id}`);
+
+    // Delete notifications (if table exists)
+    try {
+      await supabaseAdmin
+        .from('notifications')
+        .delete()
+        .eq('user_id', id);
+    } catch (e) {}
+
+    // 1. Delete from Supabase Auth
+    try {
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+      if (authError) {
+        console.warn('Supabase Auth Delete Warning (User might not exist in Auth):', authError.message);
+      } else {
+        console.log('Supabase Auth: User deleted successfully');
+      }
+    } catch (authErr) {
+      console.warn('Supabase Auth Delete Exception:', authErr);
+    }
+    
+    // 2. Delete from profiles table
+    const { data, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', id)
+      .select();
+
+    if (profileError) {
+      console.error('Database Profile Delete Error:', profileError);
+      throw profileError;
+    }
+
+    if (!data || data.length === 0) {
+      console.warn('Database Profile Delete: No profile found with ID:', id);
+      return res.status(404).json({ success: false, message: 'User profile not found' });
+    }
+
+    console.log('Database Profile: User deleted successfully from profiles table');
+    res.status(200).json({ success: true, message: 'User permanently deleted from database' });
+  } catch (error: any) {
+    console.error('Hard Delete Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 export const getUserProfile = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
   try {
     const { data, error } = await supabaseAdmin
       .from('profiles')

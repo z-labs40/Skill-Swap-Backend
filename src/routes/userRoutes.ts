@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAllUsers, updateUserStatus, getUserStats, getUserProfile, updateProfile, getUserProfileStats, getIncomingRequests, getSentRequests, uploadAvatar } from '../controllers/userController';
+import { getAllUsers, updateUserStatus, hardDeleteUser, getUserStats, getUserProfile, updateProfile, getUserProfileStats, getIncomingRequests, getSentRequests, uploadAvatar } from '../controllers/userController';
 import { upload } from '../utils/upload';
 
 const router = Router();
@@ -13,6 +13,7 @@ router.get('/:id', getUserProfile);
 router.patch('/:id', updateProfile);
 router.post('/upload-avatar', upload.single('avatar'), uploadAvatar);
 router.patch('/:id/status', updateUserStatus);
+router.delete('/:id', hardDeleteUser);
 
 export default router;
 
