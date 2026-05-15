@@ -82,14 +82,15 @@ export const sendMessage = async (req: Request, res: Response) => {
           console.log(`[Support] Human admin is active for ${userEmail}. Skipping AI auto-reply.`);
         } else {
           const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-          const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
           
           const prompt = `You are the SkillBridge Support AI. A user said: "${message}". 
           Give a very short, friendly 1-sentence reply (max 20 words).`;
           
           console.log(`[Support AI] Generating reply for ${userEmail}...`);
           const result = await model.generateContent(prompt);
-          const aiReply = result.response.text();
+          const response = await result.response;
+          const aiReply = response.text();
           console.log(`[Support AI] Reply generated: ${aiReply}`);
           
           if (aiReply) {
